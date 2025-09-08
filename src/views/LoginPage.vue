@@ -51,7 +51,7 @@
                   <p class="text-body-2 text-medium-emphasis">
                     계정이 없으신가요?
                     <v-btn
-                      @click="currentPage = 'signup'"
+                      @click="$router.push('/signup')"
                       variant="text"
                       color="primary"
                       class="pa-0"
