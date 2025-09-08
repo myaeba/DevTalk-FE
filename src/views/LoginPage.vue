@@ -84,9 +84,7 @@ export default {
   },
   methods: {
     handleLogin() {
-      
       console.log('Login attempt:', this.loginForm);
-      
     }
   }
 }
