@@ -6,16 +6,16 @@
           <v-col cols="12" sm="6" md="4" lg="3" class="pa-0">
             <v-card class="fill-height" flat>
               <!-- Signup Form -->
-              <v-card-text v-if="currentPage === 'signup'" class="pa-8">
+              <v-card-text class="pa-8">
                 <div class="text-center mb-8">
                   <h1 class="text-h4 font-weight-bold text--primary">
                     회원가입
                   </h1>
                 </div>
                 
-                <v-form @submit.prevent="handleSignup">
+                <v-form @submit.prevent="memberRegister">
                   <v-text-field
-                    v-model="signupForm.email"
+                    v-model="email"
                     label="이메일"
                     type="email"
                     placeholder="이메일을 입력하세요"
@@ -26,7 +26,7 @@
                   ></v-text-field>
                   
                   <v-text-field
-                    v-model="signupForm.nickname"
+                    v-model="nickname"
                     label="닉네임"
                     type="text"
                     placeholder="닉네임을 입력하세요"
@@ -37,7 +37,7 @@
                   ></v-text-field>
                   
                   <v-text-field
-                    v-model="signupForm.password"
+                    v-model="password"
                     label="비밀번호"
                     type="password"
                     placeholder="비밀번호를 입력하세요"
@@ -48,7 +48,7 @@
                   ></v-text-field>
                   
                   <v-text-field
-                    v-model="signupForm.confirmPassword"
+                    v-model="checkPassword"
                     label="비밀번호 확인"
                     type="password"
                     placeholder="비밀번호를 다시 입력하세요"
@@ -93,23 +93,21 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
-  name: 'VuetifySignupForm',
   data() {
     return {
-      currentPage: 'signup',
-      signupForm: {
         email: '',
         nickname: '',
         password: '',
-        confirmPassword: ''
-      }
+        checkPassword: ''
     }
   },
   methods: {
-    handleSignup() {
+    async memberRegister() {
       // 비밀번호 확인 체크
-      if (this.signupForm.password !== this.signupForm.confirmPassword) {
+      if (this.password !== this.checkPassword) {
         this.$toast?.error('비밀번호가 일치하지 않습니다.') || alert('비밀번호가 일치하지 않습니다.');
         return;
       }
@@ -119,19 +117,22 @@ export default {
       // todo: 닉네임 길이 체크
       
       // todo: 비밀번호 길이 체크
+
+      const data = {
+        nickname : this.nickname,
+        email : this.email,
+        password : this.password
+      }
       
+      console.log('API Base URL:', process.env.VUE_APP_API_BASE_URL);
       
-      // 회원가입 로직
-      console.log('Signup attempt:', {
-        email: this.signupForm.email,
-        nickname: this.signupForm.nickname,
-        password: this.signupForm.password
-      });
-      
-      // 실제 회원가입 API 호출 로직을 여기에 구현
-      // 성공 시 로그인 페이지로 이동
-      this.$toast?.success('회원가입이 완료되었습니다!') || alert('회원가입이 완료되었습니다!');
-      this.currentPage = 'login';
+      try {
+        await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/register`, data)
+        this.$router.push("/")
+      } catch (error) {
+        console.error('회원가입 에러:', error);
+        alert('회원가입에 실패했습니다.');
+      }
     }
   }
 }
