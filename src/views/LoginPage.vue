@@ -6,7 +6,7 @@
           <v-col cols="12" sm="6" md="4" lg="3" class="pa-0">
             <v-card class="fill-height" flat>
               <!-- Login Form -->
-              <v-card-text v-if="currentPage === 'login'" class="pa-8">
+              <v-card-text class="pa-8">
                 <div class="text-center mb-8">
                   <h1 class="text-h4 font-weight-bold text--primary">
                     DevConnect
@@ -15,7 +15,7 @@
                 
                 <v-form @submit.prevent="handleLogin">
                   <v-text-field
-                    v-model="loginForm.email"
+                    v-model="email"
                     label="이메일"
                     type="email"
                     placeholder="이메일을 입력하세요"
@@ -26,7 +26,7 @@
                   ></v-text-field>
                   
                   <v-text-field
-                    v-model="loginForm.password"
+                    v-model="password"
                     label="비밀번호"
                     type="password"
                     placeholder="비밀번호를 입력하세요"
@@ -71,20 +71,27 @@
 </template>
 
 <script>
+import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
+
 export default {
-  name: 'DevConnectLogin',
   data() {
     return {
-      currentPage: 'login',
-      loginForm: {
         email: '',
         password: ''
-      }
     }
   },
   methods: {
-    handleLogin() {
-      console.log('Login attempt:', this.loginForm);
+    async handleLogin() {
+      const loginData = {email:this.email, password:this.password}
+      const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/login`, loginData)
+      const token = response.data.token
+      const status = jwtDecode(token).status
+      const email = jwtDecode(token).sub
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", status);
+      localStorage.setItem("email", email);
+      window.location.href="/";
     }
   }
 }
