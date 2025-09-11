@@ -124,15 +124,8 @@ export default {
         password : this.password
       }
       
-      console.log('API Base URL:', process.env.VUE_APP_API_BASE_URL);
-      
-      try {
-        await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/register`, data)
-        this.$router.push("/")
-      } catch (error) {
-        console.error('회원가입 에러:', error);
-        alert('회원가입에 실패했습니다.');
-      }
+      await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/register`, data)
+      this.$router.push("/")
     }
   }
 }

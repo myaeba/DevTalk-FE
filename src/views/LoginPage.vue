@@ -9,7 +9,7 @@
               <v-card-text class="pa-8">
                 <div class="text-center mb-8">
                   <h1 class="text-h4 font-weight-bold text--primary">
-                    DevConnect
+                    DevTalk
                   </h1>
                 </div>
                 

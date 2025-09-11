@@ -33,15 +33,12 @@
                   v-for="chat in chatList"
                   :key="chat.id"
                   :chat="chat"
-                  @click="goToChat"
+                  @click="goToChat(chat.id)"
                 />
               </v-list>
 
               <!-- 하단 네비게이션 -->
-              <BottomNavigation
-                activeTab="chat"
-                @navigate="handleNavigation"
-              />
+              <BottomNavigation :activeTab="'chat'" />
             </v-card>
           </v-col>
         </v-row>
@@ -53,6 +50,8 @@
 <script>
 import ChatListItem from '@/components/chat/ChatListItem.vue'
 import BottomNavigation from '@/components/common/BottomNavigation.vue'
+import SockJS from 'sockjs-client'
+import Stomp from 'webstomp-client'
 
 export default {
   name: 'ChatList',
@@ -63,6 +62,8 @@ export default {
   data() {
     return {
       searchQuery: '',
+      stompClient: null,
+      isConnected: false,
       chatList: [
         {
           id: '1',
@@ -131,18 +132,73 @@ export default {
       ]
     }
   },
+
+  async created() {
+    this.connectWebSocket();
+  },
+
+  beforeRouteLeave(to, from, next) {
+    // 채팅 관련 페이지가 아닌 곳으로 이동 시에만 연결 해제
+    if (!to.path.startsWith('/chat/')) {
+      console.log('채팅 영역을 벗어남. WebSocket 연결 해제')
+      this.disconnectWebSocket()
+      window.globalStompClient = null
+    } else {
+      // 채팅방으로 이동하는 경우 전역에 stompClient 저장
+      window.globalStompClient = this.stompClient
+    }
+    next()
+  },
+  
+  beforeUnmount() {
+    this.disconnectWebSocket()
+    window.globalStompClient = null
+  },
+
   methods: {
+    // WebSocket 연결
+    connectWebSocket() {
+      try {
+        
+        if (this.stompClient && this.stompClient.connected) {
+          console.log("이미 WebSocket 연결됨");
+          return;
+        }
+        const socket = new SockJS(`${process.env.VUE_APP_API_BASE_URL}/ws`)
+        this.stompClient = Stomp.over(socket);
+        
+        // 연결 설정
+        this.stompClient.connect(
+          (frame) => {
+          console.log('WebSocket 연결 성공:', frame)
+          this.isConnected = true
+        },
+        (error) => {
+          console.error('WebSocket 연결 실패:', error)
+          this.isConnected = false
+        }      
+        );
+      } catch (error) {
+        console.error('WebSocket 초기화 실패:', error);
+      }
+    },
+
+    
+    disconnectWebSocket() {
+      if(this.stompClient && this.stompClient.connected){
+        this.stompClient.disconnect()
+        this.isConnected = false
+        console.log("연결 해제")
+      }
+    },
+    
+    // 채팅방으로 이동
     goToChat(chatId) {
       console.log(`채팅방 ${chatId}로 이동`);
-      // 개별 채팅 화면으로 이동하는 로직
-    },
-    startNewChat() {
-      console.log('새 채팅 시작');
-      // 새 채팅 시작 로직
-    },
-    handleNavigation(tab) {
-      console.log(`${tab} 탭으로 이동`);
-      // 네비게이션 로직
+      this.$router.push({
+        name: 'ChatRoom',
+        params: { roomId: chatId }
+      });
     }
   }
 }
@@ -151,6 +207,7 @@ export default {
 <style scoped>
 .fill-height {
   min-height: 100vh;
+  padding-bottom: 80px; /* 하단 네비게이션 공간 확보 */
 }
 
 .border-b {
