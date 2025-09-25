@@ -11,13 +11,17 @@
                 <v-btn icon variant="text" size="small" @click="goBack" class="mr-2">
                   <v-icon>mdi-arrow-left</v-icon>
                 </v-btn>
-                <v-avatar size="36" class="mr-3" color="grey-lighten-2">
-                  <v-img v-if="chatInfo.avatar" :src="chatInfo.avatar" alt="프로필"></v-img>
+                <v-avatar size="40" class="mr-3" color="grey-lighten-2">
+                  <v-img v-if="chatInfo.avatar" :src="chatInfo.avatar" alt="프로필">
+                    <template v-slot:placeholder>
+                      <v-icon>mdi-account</v-icon>
+                    </template>
+                  </v-img>
                   <v-icon v-else color="grey-darken-1">mdi-account</v-icon>
                 </v-avatar>
                 <div class="flex-grow-1">
-                  <h3 class="text-subtitle-1 font-weight-bold">{{ chatInfo.name }}</h3>
-                  <span class="text-caption text-grey-darken-1" v-if="chatInfo.isOnline">온라인</span>
+                  <div class="text-subtitle-1 font-weight-medium">{{ chatInfo.nickname }}</div>
+                  <div class="text-caption text-grey-darken-2">{{ chatInfo.email }}</div>
                 </div>
                 <v-btn icon variant="text" size="small">
                   <v-icon>mdi-phone</v-icon>
@@ -101,8 +105,8 @@ export default {
       roomId: null,
       currentUserId: localStorage.getItem('email'),
       chatInfo: {
-        name: '김민수',
-        isOnline: true,
+        nickname: '',
+        email: '',
         avatar: null
       }
     }
@@ -110,11 +114,14 @@ export default {
   async created() {
     this.senderEmail = localStorage.getItem("email")
     this.roomId = this.$route.params.roomId
-    
+
+    // 채팅방 정보 로드
+    await this.loadChatInfo()
+
     // 채팅 히스토리 로드
     // const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/history/${this.roomId}`)
     // this.messages = response.data
-    
+
     // WebSocket 연결
     this.connectWebsocket()
   },
@@ -129,6 +136,67 @@ export default {
   },
   
   methods: {
+    // 채팅방 정보 로드
+    async loadChatInfo() {
+      try {
+        // router state에서 상대방 정보 가져오기 (URL에 노출되지 않음)
+        const targetInfo = history.state?.targetInfo;
+
+        console.log('전달받은 상대방 정보:', targetInfo); // 디버깅용
+
+        if (targetInfo) {
+          // state로 전달받은 정보 사용
+          this.chatInfo = {
+            nickname: targetInfo.nickname,
+            email: targetInfo.email,
+            avatar: null
+          };
+        } else {
+          // state 정보가 없으면 API로 채팅방 정보 조회
+          await this.loadChatInfoFromAPI();
+        }
+
+        console.log('채팅방 정보 로드:', this.chatInfo);
+      } catch (error) {
+        console.error('채팅방 정보 로드 실패:', error);
+      }
+    },
+
+    // API로 채팅방 정보 조회 (fallback)
+    async loadChatInfoFromAPI() {
+      try {
+        const response = await fetch(`${process.env.VUE_APP_API_BASE_URL}/chat/room/${this.roomId}/info`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const roomInfo = await response.json();
+          this.chatInfo = {
+            nickname: roomInfo.otherMemberNickname,
+            email: roomInfo.otherMemberEmail,
+            avatar: roomInfo.otherMemberAvatar
+          };
+        } else {
+          // API 실패 시 기본값
+          this.chatInfo = {
+            nickname: '채팅 상대방',
+            email: 'user@example.com',
+            avatar: null
+          };
+        }
+      } catch (error) {
+        console.error('API로 채팅방 정보 조회 실패:', error);
+        this.chatInfo = {
+          nickname: '채팅 상대방',
+          email: 'user@example.com',
+          avatar: null
+        };
+      }
+    },
+
     connectWebsocket() {
       if (this.stompClient && this.stompClient.connected) return
       

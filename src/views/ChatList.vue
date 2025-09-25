@@ -244,54 +244,9 @@ export default {
       mainSearchResults: [], // 메인 화면 검색 결과
       selectedUser: null,
 
-      // 메시지를 주고받은 채팅방 목록
-      chatList: [
-        {
-          id: '1',
-          name: '김민수',
-          lastMessage: 'React Hook 관련해서 질문이 있는데요...',
-          time: '오후 2:30',
-          unread: 1,
-          isOnline: true,
-          avatar: 'https://via.placeholder.com/48/4CAF50/FFFFFF?text=김'
-        },
-        {
-          id: '2',
-          name: '박지영',
-          lastMessage: 'Spring Boot 프로젝트 공유해드렸어요',
-          time: '오후 1:15',
-          unread: 0,
-          isOnline: true,
-          avatar: 'https://via.placeholder.com/48/2196F3/FFFFFF?text=박'
-        },
-        {
-          id: '3',
-          name: '이승호',
-          lastMessage: '알고리즘 스터디 참여하실래요?',
-          time: '오전 11:45',
-          unread: 0,
-          isOnline: false,
-          avatar: 'https://via.placeholder.com/48/FF9800/FFFFFF?text=이'
-        },
-        {
-          id: '4',
-          name: '김민혁',
-          lastMessage: '코드 리뷰 감사했습니다!',
-          time: '어제',
-          unread: 0,
-          isOnline: false,
-          avatar: 'https://via.placeholder.com/48/9C27B0/FFFFFF?text=정'
-        }
-      ],
-
       // 검색할 수 있는 전체 사용자 목록
       allUsers: [
-        {
-          id: 'user1',
-          name: '김민수',
-          nickname: '민수',
-          avatar: 'https://via.placeholder.com/48/4CAF50/FFFFFF?text=김'
-        },
+
         {
           id: 'user2',
           name: '김민혁',
@@ -447,29 +402,42 @@ export default {
 
         console.log('새 채팅방 생성:', this.selectedUser.nickname);
 
-        // TODO: 실제 API로 새 채팅방 생성
-        // const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/chat/rooms`, {
-        //   targetMemberId: this.selectedUser.id
-        // }, {
-        //   headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        // });
-        // const newRoomId = response.data.roomId;
-
-        // 임시로 랜덤 채팅방 ID 생성
-        const newRoomId = Math.random().toString(36).substring(2, 11);
-
-        // 모달들 닫기
-        this.closeChatConfirmModal();
-        this.closeUserSearchModal();
-
-        // 새 채팅방으로 이동
-        this.$router.push({
-          name: 'ChatRoom',
-          params: { roomId: newRoomId }
+        // 실제 API로 새 채팅방 생성
+        const response = await fetch(`${process.env.VUE_APP_API_BASE_URL}/chat/room/create?targetMemberId=${this.selectedUser.id}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
         });
+
+        if (response.ok) {
+          const roomData = await response.json(); // CreateRoomRes 객체
+
+          // 모달들 닫기
+          this.closeChatConfirmModal();
+          this.closeUserSearchModal();
+
+          // 상대방 정보와 함께 채팅방으로 이동 (state로 전달)
+          this.$router.push({
+            name: 'ChatRoom',
+            params: { roomId: roomData.roomId },
+            state: {
+              targetInfo: {
+                nickname: roomData.targetNickname,
+                email: roomData.targetEmail,
+                targetId: roomData.targetId
+              }
+            }
+          });
+        } else {
+          console.error('채팅방 생성 API 호출 실패:', response.status);
+          throw new Error('채팅방 생성에 실패했습니다.');
+        }
       } catch (error) {
         console.error('채팅방 생성 실패:', error);
-        // 에러 처리 (토스트 메시지 등)
+        // 에러 처리 - 사용자에게 알림
+        alert('채팅방 생성에 실패했습니다. 다시 시도해주세요.');
       }
     },
 
