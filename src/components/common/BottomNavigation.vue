@@ -40,10 +40,10 @@
     
     <v-btn
       value="profile"
-      @click="handleNavigation('profile')"
+      @click="$router.push('/my')"
     >
       <v-icon>mdi-account</v-icon>
-      <span>프로필</span>
+      <span>My</span>
     </v-btn>
   </v-bottom-navigation>
 </template>

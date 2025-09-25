@@ -3,6 +3,7 @@ import SignUp from "@/views/SignUp.vue";
 import ChatList from "@/views/ChatList.vue";
 import ChatRoom from "@/views/ChatRoom.vue";
 import Home from "@/views/Home.vue";
+import MyPage from "@/views/MyPage.vue";
 import { createRouter, createWebHashHistory } from "vue-router"
 
 const routes = [
@@ -32,6 +33,11 @@ const routes = [
         path: '/chat/room/:roomId',
         name: 'ChatRoom',
         component: ChatRoom,
+    },
+    {
+        path: '/my',
+        name: 'MyPage',
+        component: MyPage
     }
 ]
 
@@ -41,7 +47,7 @@ const router = createRouter({
 })
 
 // 라우터 가드 추가
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token')
   
   // 로그인/회원가입 페이지가 아닌데 토큰이 없으면 로그인으로
