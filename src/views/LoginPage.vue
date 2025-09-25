@@ -88,9 +88,11 @@ export default {
       const token = response.data.token
       const status = jwtDecode(token).status
       const email = jwtDecode(token).sub
+      const nickname = jwtDecode(token).nickname
       localStorage.setItem("token", token);
       localStorage.setItem("role", status);
       localStorage.setItem("email", email);
+      localStorage.setItem("nickname", nickname);
       window.location.href="/";
     }
   }

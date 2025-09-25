@@ -92,6 +92,7 @@ export default {
   name: 'ChatRoom',
   data() {
     return {
+      ws: null,
       messages: [],
       newMessage: "",
       stompClient: null,
