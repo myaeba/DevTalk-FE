@@ -5,6 +5,8 @@ import ChatRoom from "@/views/ChatRoom.vue";
 import Home from "@/views/Home.vue";
 import MyPage from "@/views/MyPage.vue";
 import CreateArticle from "@/views/CreateArticle.vue";
+import EditArticle from "@/views/EditArticle.vue";
+import ArticleDetail from "@/views/ArticleDetail.vue";
 import { createRouter, createWebHashHistory } from "vue-router"
 
 const routes = [
@@ -44,6 +46,16 @@ const routes = [
         path: '/create',
         name: 'CreateArticle',
         component: CreateArticle
+    },
+    {
+        path: '/articles/:articleId/edit',
+        name: 'EditArticle',
+        component: EditArticle
+    },
+    {
+        path: '/articles/:articleId',
+        name: 'ArticleDetail',
+        component: ArticleDetail
     }
 ]
 

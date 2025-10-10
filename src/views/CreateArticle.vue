@@ -213,7 +213,6 @@ export default {
       if (!this.canPublish) return;
 
       try {
-        // 로딩 상태 표시 (선택사항)
         const token = localStorage.getItem('token');
 
         const requestData = {
@@ -242,11 +241,9 @@ export default {
         console.error('게시물 작성 실패:', error);
 
         if (error.response?.status === 401) {
-          // 인증 실패 시 로그인 페이지로 이동
           localStorage.clear();
           this.$router.push('/login');
         } else {
-          // 다른 에러는 사용자에게 알림
           alert('게시물 작성에 실패했습니다. 다시 시도해주세요.');
         }
       }

@@ -68,6 +68,8 @@
           class="post-card"
           elevation="0"
           hover
+          @click="goToArticle(post.id)"
+          style="cursor: pointer;"
         >
           <v-card-text class="pa-4">
             <!-- 사용자 정보 -->
@@ -209,6 +211,9 @@ export default {
       this.filters.forEach((filter, i) => {
         filter.active = i === index;
       });
+    },
+    goToArticle(articleId) {
+      this.$router.push(`/articles/${articleId}`);
     },
     getTagColor(tag) {
       const colors = {

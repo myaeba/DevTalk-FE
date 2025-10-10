@@ -5,7 +5,7 @@
       <v-container fluid class="pa-0 chat-list-container" style="background-color: #f5f5f5;">
         <v-row justify="center" class="ma-0 fill-height">
           <v-col cols="12" sm="6" md="4" lg="3" class="pa-0">
-            <v-card class="chat-list-card" flat>
+            <v-card :class="searchQuery ? 'chat-search-card' : 'chat-list-card'" flat>
               <!-- 상단 헤더 -->
               <v-card-title class="d-flex align-center pa-4 border-b" style="background-color: white;">
                 <h2 class="text-h6 font-weight-bold">채팅</h2>
@@ -16,7 +16,7 @@
               </v-card-title>
 
               <!-- 검색창 -->
-              <v-card-text class="pa-4" style="background-color: white;">
+              <div class="px-4 py-3" style="background-color: white;">
                 <v-text-field
                   v-model="searchQuery"
                   placeholder="닉네임으로 검색"
@@ -26,10 +26,10 @@
                   hide-details
                   clearable
                 ></v-text-field>
-              </v-card-text>
+              </div>
 
               <!-- 검색 중일 때: 사용자 검색 결과만 표시 -->
-              <v-list v-if="searchQuery" class="chat-list-scroll" style="background-color: white;">
+              <v-list v-if="searchQuery" style="background-color: white; flex: 1;" class="pt-0">
                 <v-list-item
                   v-for="user in mainSearchResults"
                   :key="user.id"
@@ -71,7 +71,7 @@
               </v-list>
 
               <!-- 검색하지 않을 때: 기존 채팅방 목록 표시 -->
-              <v-list v-else class="chat-list-scroll" style="background-color: white;">
+              <v-list v-else class="chat-list-scroll pt-0" style="background-color: white;">
                 <v-list-item
                   v-for="chat in chatList"
                   :key="chat.id"
@@ -79,17 +79,8 @@
                   class="cursor-pointer"
                 >
                   <template v-slot:prepend>
-                    <v-avatar size="48">
-                      <v-img :src="chat.avatar" :alt="chat.name + ' 프로필'">
-                        <template v-slot:placeholder>
-                          <v-icon>mdi-account</v-icon>
-                        </template>
-                      </v-img>
-                      <!-- 온라인 상태 표시 -->
-                      <div
-                        :class="chat.isOnline ? 'bg-green-500' : 'bg-grey'"
-                        class="online-status"
-                      ></div>
+                    <v-avatar size="48" color="grey-lighten-2">
+                      <v-icon color="grey-darken-1">mdi-account</v-icon>
                     </v-avatar>
                   </template>
 
@@ -587,6 +578,13 @@ export default {
   padding-bottom: 60px; /* 하단 네비게이션 공간 확보 (60px로 정확히 맞춤) */
 }
 
+.chat-search-card {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+}
+
 .fill-height {
   height: 100vh;
 }
@@ -595,7 +593,6 @@ export default {
 .chat-list-scroll {
   flex: 1;
   overflow-y: auto;
-  max-height: calc(100vh - 180px); /* 헤더와 검색창, 하단 네비게이션 제외 */
 }
 
 .border-b {
@@ -606,25 +603,6 @@ export default {
   cursor: pointer;
 }
 
-/* 온라인 상태 표시 */
-.online-status {
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 12px;
-  height: 12px;
-  border: 2px solid white;
-  border-radius: 50%;
-}
-
-/* 배경색 헬퍼 클래스 */
-.bg-green-500 {
-  background-color: #4CAF50;
-}
-
-.bg-grey {
-  background-color: #9E9E9E;
-}
 
 /* 텍스트 스타일 */
 .text-truncate {
@@ -632,4 +610,5 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 </style>

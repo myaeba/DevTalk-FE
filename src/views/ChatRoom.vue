@@ -356,6 +356,7 @@ export default {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
+  padding-bottom: 80px; /* 입력창 공간 확보 */
   min-height: calc(100vh - 200px);
   background-color: white;
 }
@@ -407,7 +408,7 @@ export default {
 .message-input-container {
   background-color: white;
   position: sticky;
-  bottom: 0;
+  bottom: 0; /* 맨 하단으로 이동 */
   z-index: 10;
 }
 

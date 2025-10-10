@@ -19,9 +19,11 @@ export default {
   },
   computed: {
     shouldShowNavigation() {
-      // 로그인, 회원가입, 게시글 작성 페이지에서는 네비게이션을 숨김
+      // 로그인, 회원가입, 게시글 작성, 게시글 상세, 게시글 수정, 채팅방 페이지에서는 네비게이션을 숨김
       const hideNavRoutes = ['/login', '/signup', '/create']
-      return !hideNavRoutes.includes(this.$route.path)
+      return !hideNavRoutes.includes(this.$route.path) &&
+             !this.$route.path.startsWith('/articles/') &&
+             !this.$route.path.startsWith('/chat/room/')
     },
     currentTab() {
       // 현재 라우트에 따라 활성 탭 결정
