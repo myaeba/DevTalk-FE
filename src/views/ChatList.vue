@@ -2,10 +2,10 @@
   <v-app>
     <v-main>
       <!-- 채팅 목록 화면 -->
-      <v-container fluid class="pa-0" style="background-color: #f5f5f5;">
-        <v-row justify="center" class="ma-0">
+      <v-container fluid class="pa-0 chat-list-container" style="background-color: #f5f5f5;">
+        <v-row justify="center" class="ma-0 fill-height">
           <v-col cols="12" sm="6" md="4" lg="3" class="pa-0">
-            <v-card class="fill-height" flat>
+            <v-card class="chat-list-card" flat>
               <!-- 상단 헤더 -->
               <v-card-title class="d-flex align-center pa-4 border-b" style="background-color: white;">
                 <h2 class="text-h6 font-weight-bold">채팅</h2>
@@ -29,7 +29,7 @@
               </v-card-text>
 
               <!-- 검색 중일 때: 사용자 검색 결과만 표시 -->
-              <v-list v-if="searchQuery" style="background-color: white;">
+              <v-list v-if="searchQuery" class="chat-list-scroll" style="background-color: white;">
                 <v-list-item
                   v-for="user in mainSearchResults"
                   :key="user.id"
@@ -71,7 +71,7 @@
               </v-list>
 
               <!-- 검색하지 않을 때: 기존 채팅방 목록 표시 -->
-              <v-list v-else style="background-color: white;">
+              <v-list v-else class="chat-list-scroll" style="background-color: white;">
                 <v-list-item
                   v-for="chat in chatList"
                   :key="chat.id"
@@ -95,7 +95,7 @@
 
                   <v-list-item-content>
                     <v-list-item-title class="font-weight-medium">
-                      {{ chat.name }}
+                      {{ chat.nickname || chat.email.split('@')[0] }}
                     </v-list-item-title>
                     <v-list-item-subtitle class="text-truncate">
                       {{ chat.lastMessage }}
@@ -118,9 +118,6 @@
                   </template>
                 </v-list-item>
               </v-list>
-
-              <!-- 하단 네비게이션 -->
-              <BottomNavigation :activeTab="'chat'" />
             </v-card>
           </v-col>
         </v-row>
@@ -227,13 +224,8 @@
 </template>
 
 <script>
-import BottomNavigation from '@/components/common/BottomNavigation.vue'
-
 export default {
   name: 'ChatList',
-  components: {
-    BottomNavigation
-  },
   data() {
     return {
       searchQuery: '',
@@ -243,6 +235,7 @@ export default {
       searchResults: [],
       mainSearchResults: [], // 메인 화면 검색 결과
       selectedUser: null,
+      chatList: [], // 채팅방 목록
 
       // 검색할 수 있는 전체 사용자 목록
       allUsers: [
@@ -287,6 +280,10 @@ export default {
     }
   },
 
+  async created() {
+    // 채팅방 목록 로드
+    await this.loadChatList();
+  },
 
   watch: {
     // 메인 화면 검색어 변경 시 실시간 검색
@@ -301,6 +298,70 @@ export default {
   },
 
   methods: {
+    // 채팅방 목록 로드
+    async loadChatList() {
+      try {
+        const response = await fetch(`${process.env.VUE_APP_API_BASE_URL}/chat/room/list`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const rooms = await response.json();
+
+          console.log('API 응답 원본 데이터:', rooms);
+
+          // 각 room 객체의 구조 확인
+          if (rooms.length > 0) {
+            console.log('첫 번째 room 데이터:', rooms[0]);
+            console.log('targetNickname:', rooms[0].targetNickname);
+            console.log('targetEmail:', rooms[0].targetEmail);
+            console.log('마지막 메시지 필드 확인:', {
+              lastMessage: rooms[0].lastMessage,
+              lastContent: rooms[0].lastContent,
+              recentMessage: rooms[0].recentMessage
+            });
+          }
+
+          // RoomListRes를 chatList 형태로 변환
+
+          this.chatList = rooms.map((room, index) => {
+            console.log(`Room ${index} 매핑:`, {
+              roomId: room.roomId,
+              targetNickname: room.targetNickname,
+              targetEmail: room.targetEmail,
+              '닉네임이 있나?': !!room.targetNickname,
+              '표시될 이름': room.targetNickname || room.targetEmail.split('@')[0]
+            });
+
+            return {
+              id: room.roomId,
+              name: room.targetNickname || room.targetEmail.split('@')[0], // 닉네임 우선, 없으면 이메일 앞부분
+              nickname: room.targetNickname, // 실제 닉네임 저장
+              email: room.targetEmail, // 실제 이메일 저장
+              lastMessage: room.lastMessage || room.lastContent || '메시지를 시작해보세요', // 실제 마지막 메시지 사용
+              time: '', // 시간도 별도 API 필요
+              unread: 0, // 읽지 않은 메시지 수도 별도 API 필요
+              isOnline: false, // 온라인 상태도 별도 API 필요
+              avatar: `https://via.placeholder.com/48/4CAF50/FFFFFF?text=${(room.targetNickname || room.targetEmail).charAt(0)}`
+            };
+          });
+
+          // 마지막 메시지가 없는 방들에 대해 실제 마지막 메시지 로드
+          await this.loadLastMessagesForRooms();
+
+          console.log('채팅방 목록 로드 완료:', this.chatList);
+        } else {
+          console.error('채팅방 목록 API 호출 실패:', response.status);
+        }
+      } catch (error) {
+        console.error('채팅방 목록 로드 실패:', error);
+      }
+    },
+
     // 메인 화면에서 사용자 검색
     async searchMainUsers() {
       if (!this.searchQuery.trim()) {
@@ -333,6 +394,45 @@ export default {
           user.nickname.toLowerCase().includes(query)
         );
       }
+    },
+
+    // 각 채팅방의 마지막 메시지 로드
+    async loadLastMessagesForRooms() {
+      console.log('각 채팅방의 마지막 메시지 로드 중...');
+
+      // 병렬로 모든 방의 마지막 메시지 조회
+      const promises = this.chatList.map(async (chat, index) => {
+        // 이미 마지막 메시지가 있고 기본 메시지가 아닌 경우 스킵
+        if (chat.lastMessage && chat.lastMessage !== '메시지를 시작해보세요') {
+          return;
+        }
+
+        try {
+          const response = await fetch(`${process.env.VUE_APP_API_BASE_URL}/chat/history/${chat.id}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const messages = await response.json();
+            if (messages && messages.length > 0) {
+              // 마지막 메시지 가져오기
+              const lastMsg = messages[messages.length - 1];
+              this.chatList[index].lastMessage = lastMsg.content || lastMsg.message || '메시지를 시작해보세요';
+
+              console.log(`Room ${chat.id} 마지막 메시지:`, this.chatList[index].lastMessage);
+            }
+          }
+        } catch (error) {
+          console.error(`Room ${chat.id} 마지막 메시지 로드 실패:`, error);
+        }
+      });
+
+      // 모든 요청 완료까지 대기
+      await Promise.all(promises);
+      console.log('모든 채팅방의 마지막 메시지 로드 완료');
     },
 
     // + 버튼 클릭 시 사용자 검색 모달 열기
@@ -444,19 +544,58 @@ export default {
     // 기존 채팅방으로 이동
     goToChat(chatId) {
       console.log(`채팅방 ${chatId}로 이동`);
-      this.$router.push({
-        name: 'ChatRoom',
-        params: { roomId: chatId }
-      });
+
+      // 해당 채팅방 정보 찾기
+      const chatRoom = this.chatList.find(chat => chat.id == chatId);
+
+      if (chatRoom) {
+        // 상대방 정보와 함께 채팅방으로 이동
+        this.$router.push({
+          name: 'ChatRoom',
+          params: { roomId: chatId },
+          state: {
+            targetInfo: {
+              nickname: chatRoom.nickname, // 실제 닉네임 사용
+              email: chatRoom.email, // 실제 이메일 사용
+              targetId: null
+            }
+          }
+        });
+      } else {
+        // 채팅방 정보가 없으면 기본 이동
+        this.$router.push({
+          name: 'ChatRoom',
+          params: { roomId: chatId }
+        });
+      }
     }
   }
 }
 </script>
 
 <style scoped>
+/* 채팅 리스트 컨테이너 - 화면 높이에 맞춤 */
+.chat-list-container {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.chat-list-card {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 60px; /* 하단 네비게이션 공간 확보 (60px로 정확히 맞춤) */
+}
+
 .fill-height {
-  min-height: 100vh;
-  padding-bottom: 80px; /* 하단 네비게이션 공간 확보 */
+  height: 100vh;
+}
+
+/* 채팅 목록 스크롤 영역 */
+.chat-list-scroll {
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 180px); /* 헤더와 검색창, 하단 네비게이션 제외 */
 }
 
 .border-b {

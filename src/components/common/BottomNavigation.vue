@@ -1,51 +1,58 @@
 <template>
-  <v-bottom-navigation 
-    :model-value="activeTab"
-    color="primary" 
-    class="border-t"
-    height="60"
-    style="background-color: white;"
-  >
-    <v-btn
-      value="home"
-      @click="$router.push('/')"
-    >
-      <v-icon>mdi-home</v-icon>
-      <span>홈</span>
-    </v-btn>
-    
-    <v-btn
-      value="search"
-      @click="handleNavigation('search')"
-    >
-      <v-icon>mdi-magnify</v-icon>
-      <span>탐색</span>
-    </v-btn>
-    
-    <v-btn
-      value="add"
-      @click="handleNavigation('add')"
-    >
-      <v-icon>mdi-plus</v-icon>
-      <span>작성</span>
-    </v-btn>
-    
-    <v-btn
-      value="chat"
-      @click="$router.push('/chat')"
-    >
-      <v-icon>mdi-chat</v-icon>
-      <span>채팅</span>
-    </v-btn>
-    
-    <v-btn
-      value="profile"
-      @click="$router.push('/my')"
-    >
-      <v-icon>mdi-account</v-icon>
-      <span>My</span>
-    </v-btn>
-  </v-bottom-navigation>
+  <div class="bottom-nav-fixed">
+    <v-container fluid class="pa-0" style="background-color: #f5f5f5;">
+      <v-row justify="center" class="ma-0">
+        <v-col cols="12" sm="6" md="4" lg="3" class="pa-0">
+          <div class="custom-bottom-nav">
+            <v-btn 
+              :class="{ 'active-tab': activeTab === 'home' }"
+              variant="text" 
+              @click="$router.push('/')"
+              class="nav-btn"
+            >
+              <v-icon>mdi-home</v-icon>
+            </v-btn>
+
+            <v-btn 
+              :class="{ 'active-tab': activeTab === 'search' }"
+              variant="text" 
+              @click="handleNavigation('search')"
+              class="nav-btn"
+            >
+              <v-icon>mdi-magnify</v-icon>
+            </v-btn>
+
+            <v-btn
+              :class="{ 'active-tab': activeTab === 'add' }"
+              variant="text"
+              @click="$router.push('/create')"
+              class="nav-btn"
+            >
+              <v-icon>mdi-plus</v-icon>
+            </v-btn>
+
+            <v-btn 
+              :class="{ 'active-tab': activeTab === 'chat' }"
+              variant="text" 
+              @click="$router.push('/chat')"
+              class="nav-btn"
+            >
+              <v-icon>mdi-chat</v-icon>
+            </v-btn>
+
+            <v-btn 
+              :class="{ 'active-tab': activeTab === 'profile' }"
+              variant="text" 
+              @click="$router.push('/my')"
+              class="nav-btn"
+            >
+              <v-icon>mdi-account</v-icon>
+            </v-btn>
+          </div>
+        </v-col>
+      </v-row>
+    </v-container>
+  </div>
 </template>
 
 <script>
@@ -60,7 +67,6 @@ export default {
   methods: {
     handleNavigation(tab) {
       console.log(`${tab} 기능은 아직 구현되지 않았습니다.`);
-      // 나중에 구현될 기능들 (탐색, 작성, 프로필)
       this.$emit('navigate', tab);
     }
   }
@@ -68,7 +74,40 @@ export default {
 </script>
 
 <style scoped>
-.border-t {
+.bottom-nav-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.custom-bottom-nav {
+  background-color: white;
+  height: 60px;
   border-top: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.nav-btn {
+  flex: 1;
+  height: 60px !important;
+  border-radius: 0 !important;
+  min-width: auto !important;
+}
+
+.nav-btn .v-icon {
+  font-size: 24px !important;
+  color: #666 !important;
+}
+
+.nav-btn.active-tab .v-icon {
+  color: #1976d2 !important;
+}
+
+.nav-btn:hover .v-icon {
+  color: #1976d2 !important;
 }
 </style>

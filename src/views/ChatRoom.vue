@@ -8,9 +8,9 @@
               
               <!-- 상단 헤더 -->
               <v-card-title class="d-flex align-center pa-4 border-b" style="background-color: white;">
-                <v-btn icon variant="text" size="small" @click="goBack" class="mr-2">
-                  <v-icon>mdi-arrow-left</v-icon>
-                </v-btn>
+                <div @click="goBack" class="back-button">
+                  &lt;
+                </div>
                 <v-avatar size="40" class="mr-3" color="grey-lighten-2">
                   <v-img v-if="chatInfo.avatar" :src="chatInfo.avatar" alt="프로필">
                     <template v-slot:placeholder>
@@ -20,8 +20,14 @@
                   <v-icon v-else color="grey-darken-1">mdi-account</v-icon>
                 </v-avatar>
                 <div class="flex-grow-1">
-                  <div class="text-subtitle-1 font-weight-medium">{{ chatInfo.nickname }}</div>
-                  <div class="text-caption text-grey-darken-2">{{ chatInfo.email }}</div>
+                  <!-- 닉네임이 있으면 닉네임, 없으면 이메일의 @ 앞부분을 닉네임으로 -->
+                  <div class="text-subtitle-1 font-weight-medium">
+                    {{ displayName }}
+                  </div>
+                  <!-- 닉네임이 있을 때만 이메일을 아래에 표시 -->
+                  <div class="text-caption text-grey-darken-2" v-if="chatInfo.nickname && chatInfo.nickname.trim() && chatInfo.email">
+                    {{ chatInfo.email }}
+                  </div>
                 </div>
                 <v-btn icon variant="text" size="small">
                   <v-icon>mdi-phone</v-icon>
@@ -40,7 +46,7 @@
                   :class="{ 'my-message': message.senderEmail === currentUserId }"
                 >
                   <div class="message-bubble" :class="message.senderEmail === currentUserId ? 'sent' : 'received'">
-                    <div class="message-content">{{ message.message }}</div>
+                    <div class="message-content">{{ message.content || message.message }}</div>
                     <div class="message-time">{{ formatMessageTime(message.timestamp) }}</div>
                   </div>
                 </div>
@@ -111,6 +117,24 @@ export default {
       }
     }
   },
+
+  computed: {
+    displayName() {
+      // 1. 닉네임이 있으면 닉네임 사용
+      if (this.chatInfo.nickname && this.chatInfo.nickname.trim()) {
+        return this.chatInfo.nickname;
+      }
+
+      // 2. 닉네임이 없고 이메일이 있으면 이메일의 @ 앞부분 사용
+      if (this.chatInfo.email && this.chatInfo.email.trim()) {
+        return this.chatInfo.email.split('@')[0];
+      }
+
+      // 3. 둘 다 없으면 기본값
+      return '사용자';
+    }
+  },
+
   async created() {
     this.senderEmail = localStorage.getItem("email")
     this.roomId = this.$route.params.roomId
@@ -119,8 +143,7 @@ export default {
     await this.loadChatInfo()
 
     // 채팅 히스토리 로드
-    // const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/history/${this.roomId}`)
-    // this.messages = response.data
+    await this.loadChatHistory()
 
     // WebSocket 연결
     this.connectWebsocket()
@@ -197,6 +220,40 @@ export default {
       }
     },
 
+    // 채팅 히스토리 로드
+    async loadChatHistory() {
+      try {
+        console.log(`채팅방 ${this.roomId} 히스토리 로드 중...`);
+
+        const response = await fetch(`${process.env.VUE_APP_API_BASE_URL}/chat/history/${this.roomId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const messageHistory = await response.json();
+          console.log('로드된 채팅 히스토리:', messageHistory);
+
+          // MessageDto 배열을 messages 배열로 설정
+          this.messages = messageHistory;
+
+          // 히스토리 로드 후 스크롤을 맨 아래로
+          this.$nextTick(() => {
+            this.scrollToBottom();
+          });
+        } else {
+          console.error('채팅 히스토리 로드 실패:', response.status);
+          // 히스토리 로드 실패해도 빈 배열로 초기화
+          this.messages = [];
+        }
+      } catch (error) {
+        console.error('채팅 히스토리 로드 에러:', error);
+        this.messages = [];
+      }
+    },
+
     connectWebsocket() {
       if (this.stompClient && this.stompClient.connected) return
       
@@ -212,6 +269,7 @@ export default {
         console.log('WebSocket 연결 성공')
         this.stompClient.subscribe(`/sub/${this.roomId}`, (message) => {
           const parseMessage = JSON.parse(message.body)
+          console.log('받은 메시지:', parseMessage)
           this.messages.push(parseMessage)
           this.scrollToBottom()
         }, { Authorization: `Bearer ${this.token}` })
@@ -223,12 +281,15 @@ export default {
     
     sendMessage() {
       if (this.newMessage.trim() === "") return
-      
+
       const message = {
-        senderEmail: this.senderEmail,
-        message: this.newMessage
+        roomId: this.roomId,
+        content: this.newMessage,
+        senderEmail: this.senderEmail
       }
-      
+
+      console.log('전송할 메시지:', message)
+
       this.stompClient.send(`/pub/${this.roomId}`, JSON.stringify(message))
       this.newMessage = ""
     },
@@ -259,8 +320,18 @@ export default {
       return `${hours}:${minutes}`
     },
     
+    // 뒤로가기
     goBack() {
-      this.$router.go(-1)
+      // WebSocket 연결 해제
+      this.disconnectWebSocket();
+
+      // 채팅 목록으로 이동 (더 안전한 방법)
+      if (window.history.length > 1) {
+        this.$router.go(-1);
+      } else {
+        // 히스토리가 없으면 채팅 목록으로
+        this.$router.push('/chat');
+      }
     }
   }
 }
@@ -338,5 +409,20 @@ export default {
   position: sticky;
   bottom: 0;
   z-index: 10;
+}
+
+/* 뒤로가기 버튼 (테두리 완전 제거) */
+.back-button {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  margin-right: 12px;
+  padding: 4px;
+  user-select: none;
+}
+
+.back-button:hover {
+  color: #1976d2;
 }
 </style>

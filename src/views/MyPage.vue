@@ -1,10 +1,10 @@
 <template>
   <v-app>
     <v-main>
-      <v-container fluid class="pa-0" style="background-color: #f5f5f5;">
-        <v-row justify="center" class="ma-0">
+      <v-container fluid class="pa-0 mypage-container" style="background-color: #f5f5f5;">
+        <v-row justify="center" class="ma-0 fill-height">
           <v-col cols="12" sm="6" md="4" lg="3" class="pa-0">
-            <v-card class="fill-height" flat>
+            <v-card class="mypage-card" flat>
 
               <!-- 상단 헤더 -->
               <v-card-title class="d-flex align-center pa-4 border-b" style="background-color: white;">
@@ -90,9 +90,6 @@
                   <v-list-item-title class="font-weight-medium text-red-darken-2">로그아웃</v-list-item-title>
                 </v-list-item>
               </v-list>
-
-              <!-- 하단 네비게이션 -->
-              <BottomNavigation :activeTab="'profile'" />
             </v-card>
           </v-col>
         </v-row>
@@ -147,13 +144,8 @@
 </template>
 
 <script>
-import BottomNavigation from '@/components/common/BottomNavigation.vue'
-
 export default {
   name: 'MyPage',
-  components: {
-    BottomNavigation
-  },
   data() {
     return {
       statusDialog: false,
@@ -262,9 +254,21 @@ export default {
 </script>
 
 <style scoped>
+/* MyPage 컨테이너 - 화면 높이에 맞춤 */
+.mypage-container {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.mypage-card {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 60px; /* 하단 네비게이션 공간 확보 (60px로 정확히 맞춤) */
+}
+
 .fill-height {
-  min-height: 100vh;
-  padding-bottom: 80px; /* 하단 네비게이션 공간 확보 */
+  height: 100vh;
 }
 
 .border-b {
@@ -305,5 +309,12 @@ export default {
 .v-avatar:hover {
   transform: scale(1.05);
   transition: transform 0.2s ease-in-out;
+}
+
+/* 텍스트 스타일 */
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
