@@ -170,7 +170,7 @@ export default {
     },
 
     goBack() {
-      this.$router.push('/');
+      this.$router.go(-1);
     }
   }
 }

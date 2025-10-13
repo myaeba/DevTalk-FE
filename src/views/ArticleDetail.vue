@@ -106,29 +106,151 @@
 
             <!-- 댓글 섹션 -->
             <div class="pa-4">
-              <h3 class="text-h6 font-weight-bold mb-4">댓글 {{ comments.length }}개</h3>
+              <h3 class="text-h6 font-weight-bold mb-4">댓글 {{ parentComments.length }}개</h3>
 
-              <div v-for="comment in comments" :key="comment.id" class="mb-4 pb-4 border-b-sm">
-                <div class="d-flex align-start">
-                  <v-avatar size="32" class="mr-3" color="grey-lighten-2">
+              <!-- 부모 댓글 -->
+              <div v-for="comment in parentComments" :key="comment.id" class="mb-4">
+                <!-- 부모 댓글 -->
+                <div class="d-flex pb-4 border-b-sm" style="align-items: flex-start;">
+                  <v-avatar size="32" class="mr-3" color="grey-lighten-2" style="flex-shrink: 0;">
                     <v-icon size="16" color="grey-darken-1">mdi-account</v-icon>
                   </v-avatar>
-                  <div class="flex-1-1">
-                    <div class="d-flex align-center mb-1">
-                      <h4 class="text-subtitle-2 font-weight-medium mr-2">{{ comment.author }}</h4>
-                      <span class="text-caption text-grey-darken-1">{{ comment.time }}</span>
+                  <div style="flex: 1; min-width: 0;">
+                    <!-- 닉네임 + 시간 -->
+                    <div class="mb-1">
+                      <span class="text-subtitle-2 font-weight-bold">{{ comment.writerNickname }}</span>
+                      <span class="text-caption text-grey-darken-1 ml-2">0주</span>
                     </div>
-                    <p class="text-body-2 text-grey-darken-2 mb-2">{{ comment.content }}</p>
-                    <div class="d-flex align-center ga-4">
-                      <v-btn variant="text" size="small" @click="toggleCommentLike(comment.id)" class="pa-0" style="min-width: auto;">
-                        <v-icon size="14" :color="comment.isLiked ? 'red' : 'grey'" class="mr-1">
-                          {{ comment.isLiked ? 'mdi-heart' : 'mdi-heart-outline' }}
+                    <!-- 댓글 내용 (수정 모드) -->
+                    <div v-if="editingCommentId === comment.id" class="mb-2">
+                      <v-text-field
+                        v-model="editingContent"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        autofocus
+                      ></v-text-field>
+                      <div class="d-flex align-center ga-2 mt-2">
+                        <v-btn size="small" color="primary" @click="saveCommentEdit(comment.id)">저장</v-btn>
+                        <v-btn size="small" variant="text" @click="cancelCommentEdit">취소</v-btn>
+                      </div>
+                    </div>
+                    <!-- 댓글 내용 (일반 모드) -->
+                    <div v-else class="text-body-2 mb-2" :class="comment.deleted ? 'text-grey' : 'text-grey-darken-2'" style="line-height: 1.5; word-break: break-word;">
+                      {{ comment.deleted ? '삭제된 메시지입니다.' : comment.content }}
+                    </div>
+                    <!-- 답글 달기 + 수정/삭제 -->
+                    <div class="d-flex align-center" style="gap: 12px;">
+                      <span class="text-caption text-grey-darken-1" style="cursor: pointer;" @click="toggleReplyInput(comment.id)">
+                        답글 달기
+                      </span>
+                      <!-- 자신의 댓글일 경우 수정/삭제 버튼 -->
+                      <template v-if="isOwnComment(comment.writerNickname)">
+                        <span class="text-caption text-grey-darken-1" style="cursor: pointer;" @click="handleEditComment(comment.id)">
+                          수정
+                        </span>
+                        <span class="text-caption text-grey-darken-1" style="cursor: pointer;" @click="handleDeleteComment(comment.id)">
+                          삭제
+                        </span>
+                      </template>
+                    </div>
+
+                    <!-- 답글 입력창 -->
+                    <div v-if="activeReplyId === comment.id" class="mt-3">
+                      <div class="d-flex align-center">
+                        <v-text-field
+                          v-model="replyContent"
+                          placeholder="답글을 입력하세요..."
+                          variant="outlined"
+                          density="compact"
+                          hide-details
+                          class="flex-1-1 mr-2"
+                          @keydown.enter="addReply(comment.id)"
+                        ></v-text-field>
+                        <v-btn
+                          color="primary"
+                          size="small"
+                          :disabled="!replyContent.trim()"
+                          @click="addReply(comment.id)"
+                        >
+                          작성
+                        </v-btn>
+                        <v-btn
+                          size="small"
+                          variant="text"
+                          @click="cancelReply"
+                          class="ml-1"
+                        >
+                          취소
+                        </v-btn>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 우측 좋아요 버튼 + 숫자 -->
+                  <div class="d-flex flex-column align-center ml-2" style="flex-shrink: 0; align-self: center;">
+                    <v-btn icon size="x-small" variant="text" @click="toggleCommentLike(comment.id)">
+                      <v-icon :color="comment.isLiked ? 'red' : 'grey-lighten-1'" size="18">
+                        {{ comment.isLiked ? 'mdi-heart' : 'mdi-heart-outline' }}
+                      </v-icon>
+                    </v-btn>
+                    <span class="text-caption text-grey-darken-1" style="font-size: 11px; margin-top: -4px;">100</span>
+                  </div>
+                </div>
+
+                <!-- 대댓글 (자식 댓글) -->
+                <div v-for="reply in getReplies(comment.id)" :key="reply.id" class="ml-10 mt-3 pb-3 border-b-sm">
+                  <div class="d-flex" style="align-items: flex-start;">
+                    <v-avatar size="28" class="mr-3" color="grey-lighten-2" style="flex-shrink: 0;">
+                      <v-icon size="14" color="grey-darken-1">mdi-account</v-icon>
+                    </v-avatar>
+                    <div style="flex: 1; min-width: 0;">
+                      <!-- 닉네임 + 시간 -->
+                      <div class="mb-1">
+                        <span class="text-subtitle-2 font-weight-bold">{{ reply.writerNickname }}</span>
+                        <span class="text-caption text-grey-darken-1 ml-2">0주</span>
+                      </div>
+                      <!-- 댓글 내용 (수정 모드) -->
+                      <div v-if="editingCommentId === reply.id" class="mb-2">
+                        <v-text-field
+                          v-model="editingContent"
+                          variant="outlined"
+                          density="compact"
+                          hide-details
+                          autofocus
+                        ></v-text-field>
+                        <div class="d-flex align-center ga-2 mt-2">
+                          <v-btn size="small" color="primary" @click="saveCommentEdit(reply.id)">저장</v-btn>
+                          <v-btn size="small" variant="text" @click="cancelCommentEdit">취소</v-btn>
+                        </div>
+                      </div>
+                      <!-- 댓글 내용 (일반 모드) -->
+                      <div v-else class="text-body-2 mb-2" :class="reply.deleted ? 'text-grey' : 'text-grey-darken-2'" style="line-height: 1.5; word-break: break-word;">
+                        {{ reply.deleted ? '삭제된 메시지입니다.' : reply.content }}
+                      </div>
+                      <!-- 답글 달기 + 수정/삭제 -->
+                      <div class="d-flex align-center" style="gap: 12px;">
+                        <span class="text-caption text-grey-darken-1" style="cursor: pointer;" @click="toggleReplyInput(reply.id)">
+                          답글 달기
+                        </span>
+                        <!-- 자신의 댓글일 경우 수정/삭제 버튼 -->
+                        <template v-if="isOwnComment(reply.writerNickname)">
+                          <span class="text-caption text-grey-darken-1" style="cursor: pointer;" @click="handleEditComment(reply.id)">
+                            수정
+                          </span>
+                          <span class="text-caption text-grey-darken-1" style="cursor: pointer;" @click="handleDeleteComment(reply.id)">
+                            삭제
+                          </span>
+                        </template>
+                      </div>
+                    </div>
+                    <!-- 우측 좋아요 버튼 + 숫자 -->
+                    <div class="d-flex flex-column align-center ml-2" style="flex-shrink: 0; align-self: center;">
+                      <v-btn icon size="x-small" variant="text" @click="toggleCommentLike(reply.id)">
+                        <v-icon :color="reply.isLiked ? 'red' : 'grey-lighten-1'" size="16">
+                          {{ reply.isLiked ? 'mdi-heart' : 'mdi-heart-outline' }}
                         </v-icon>
-                        <span class="text-caption">{{ comment.likes }}</span>
                       </v-btn>
-                      <v-btn variant="text" size="small" class="pa-0 text-caption" style="min-width: auto;">
-                        답글
-                      </v-btn>
+                      <span class="text-caption text-grey-darken-1" style="font-size: 11px; margin-top: -4px;">100</span>
                     </div>
                   </div>
                 </div>
@@ -194,36 +316,17 @@ export default {
       isBookmarked: false,
       likeCount: 142,
       newComment: '',
-      comments: [
-        {
-          id: 1,
-          author: '박지영',
-          content: '정말 유용한 정보네요! useEffect 의존성 배열 부분이 특히 도움이 되었습니다. 감사합니다!',
-          time: '1시간 전',
-          likes: 5,
-          isLiked: false
-        },
-        {
-          id: 2,
-          author: '이준호',
-          content: '실무에서 자주 겪는 문제들을 잘 정리해주셨네요. 메모리 누수 방지 부분은 꼭 기억해둬야겠어요.',
-          time: '30분 전',
-          likes: 3,
-          isLiked: false
-        },
-        {
-          id: 3,
-          author: '김수진',
-          content: '코드 예제가 이해하기 쉽게 잘 작성되어 있어서 좋네요. 다음 편도 기대됩니다!',
-          time: '15분 전',
-          likes: 2,
-          isLiked: false
-        }
-      ]
+      comments: [],
+      activeReplyId: null, // 답글 입력창 활성화된 댓글 ID
+      replyContent: '', // 답글 내용
+      commentLikes: {}, // 댓글별 좋아요 상태 { commentId: isLiked }
+      editingCommentId: null, // 수정 중인 댓글 ID
+      editingContent: '' // 수정 중인 댓글 내용
     }
   },
   async mounted() {
     await this.fetchArticle();
+    await this.fetchComments();
   },
   watch: {
     // 라우트 변경을 감지해서 게시글 새로고침
@@ -232,18 +335,38 @@ export default {
       // 같은 게시글 페이지로 돌아온 경우에도 새로고침
       if (to.name === 'ArticleDetail') {
         this.fetchArticle();
+        this.fetchComments();
       }
     }
   },
   // 페이지가 다시 활성화될 때 새로고침
   activated() {
     this.fetchArticle();
+    this.fetchComments();
   },
   computed: {
     isOwnPost() {
       // 현재 로그인한 사용자의 닉네임과 글 작성자 닉네임 비교
       const currentUserNickname = localStorage.getItem('nickname');
       return this.article && this.article.authorNickname === currentUserNickname;
+    },
+    // 부모 댓글만 필터링
+    // 백엔드 규칙: parentCommentId가 null이거나, 자기 자신의 id와 같으면 부모 댓글
+    parentComments() {
+      const filtered = this.comments.filter(comment =>
+        comment.parentCommentId === null || comment.parentCommentId === comment.id
+      ).map(comment => ({
+        ...comment,
+        isLiked: this.commentLikes[comment.id] || false
+      }));
+
+      console.log('parentComments computed 결과:', filtered);
+      if (filtered.length > 0) {
+        console.log('첫 번째 부모 댓글:', filtered[0]);
+        console.log('memberNickname 값:', filtered[0].memberNickname);
+      }
+
+      return filtered;
     }
   },
   methods: {
@@ -283,6 +406,214 @@ export default {
         this.loading = false;
       }
     },
+    // 댓글 목록 조회
+    async fetchComments() {
+      try {
+        const token = localStorage.getItem('token');
+        const articleId = this.$route.params.articleId;
+
+        console.log('댓글 목록 조회 시작:', articleId);
+
+        const response = await axios.get(`/comments/${articleId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          baseURL: process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080'
+        });
+
+        console.log('댓글 목록 조회 성공:', response.data);
+        console.log('첫 번째 댓글 상세:', response.data[0]);
+        console.log('첫 번째 댓글의 모든 키:', response.data[0] ? Object.keys(response.data[0]) : 'no data');
+        this.comments = response.data;
+
+      } catch (error) {
+        console.error('댓글 목록 조회 실패:', error);
+        console.error('에러 상세:', error.response);
+        // 댓글이 없거나 조회 실패해도 로그아웃하지 않음
+        this.comments = [];
+      }
+    },
+    // 특정 부모 댓글의 대댓글들 가져오기
+    getReplies(parentCommentId) {
+      return this.comments.filter(comment =>
+        comment.parentCommentId === parentCommentId && comment.id !== parentCommentId
+      ).map(comment => ({
+        ...comment,
+        isLiked: this.commentLikes[comment.id] || false
+      }));
+    },
+    // 자신의 댓글인지 확인
+    isOwnComment(commentAuthorNickname) {
+      const currentUserNickname = localStorage.getItem('nickname');
+      return commentAuthorNickname === currentUserNickname;
+    },
+    // 댓글 좋아요 토글
+    toggleCommentLike(commentId) {
+      this.commentLikes[commentId] = !this.commentLikes[commentId];
+      // 반응성을 위해 Vue.set 대신 객체 재할당
+      this.commentLikes = { ...this.commentLikes };
+    },
+    // 댓글 수정 모드 활성화
+    handleEditComment(commentId) {
+      console.log('=== 댓글 수정 모드 활성화 ===');
+      console.log('commentId:', commentId);
+      console.log('전체 댓글 목록:', this.comments);
+
+      const comment = this.comments.find(c => c.id === commentId);
+      console.log('찾은 댓글:', comment);
+
+      if (comment) {
+        this.editingCommentId = commentId;
+        this.editingContent = comment.content;
+        console.log('수정 모드 설정 완료 - editingCommentId:', this.editingCommentId);
+        console.log('수정 모드 설정 완료 - editingContent:', this.editingContent);
+      } else {
+        console.error('댓글을 찾을 수 없습니다!');
+      }
+    },
+    // 댓글 수정 저장
+    async saveCommentEdit(commentId) {
+      console.log('=== 댓글 수정 저장 시작 ===');
+      console.log('commentId:', commentId);
+      console.log('수정할 내용:', this.editingContent);
+
+      if (!this.editingContent.trim()) {
+        alert('댓글 내용을 입력해주세요.');
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        const requestData = {
+          content: this.editingContent.trim()
+        };
+
+        console.log('API 요청 URL:', `/comments/${commentId}/comment`);
+        console.log('API 요청 데이터:', requestData);
+
+        const response = await axios.put(`/comments/${commentId}/comment`, requestData, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          baseURL: process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080'
+        });
+
+        console.log('댓글 수정 성공:', response.data);
+
+        // 수정 모드 종료
+        this.editingCommentId = null;
+        this.editingContent = '';
+
+        // 댓글 목록 새로고침
+        await this.fetchComments();
+
+      } catch (error) {
+        console.error('댓글 수정 실패:', error);
+        if (error.response?.status === 401) {
+          localStorage.clear();
+          this.$router.push('/login');
+        } else {
+          alert('댓글 수정에 실패했습니다.');
+        }
+      }
+    },
+    // 댓글 수정 취소
+    cancelCommentEdit() {
+      this.editingCommentId = null;
+      this.editingContent = '';
+    },
+    // 댓글 삭제
+    async handleDeleteComment(commentId) {
+      if (!confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+
+        const response = await axios.delete(`/comments/${commentId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          baseURL: process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080'
+        });
+
+        console.log('댓글 삭제 성공:', response.data);
+
+        // 댓글 목록 새로고침
+        await this.fetchComments();
+
+      } catch (error) {
+        console.error('댓글 삭제 실패:', error);
+        if (error.response?.status === 401) {
+          localStorage.clear();
+          this.$router.push('/login');
+        } else {
+          alert('댓글 삭제에 실패했습니다.');
+        }
+      }
+    },
+    // 답글 입력창 토글
+    toggleReplyInput(commentId) {
+      if (this.activeReplyId === commentId) {
+        this.activeReplyId = null;
+        this.replyContent = '';
+      } else {
+        this.activeReplyId = commentId;
+        this.replyContent = '';
+      }
+    },
+    // 답글 작성 취소
+    cancelReply() {
+      this.activeReplyId = null;
+      this.replyContent = '';
+    },
+    // 답글 작성
+    async addReply(parentCommentId) {
+      if (!this.replyContent.trim()) return;
+
+      try {
+        const token = localStorage.getItem('token');
+        const articleId = this.$route.params.articleId;
+
+        const commentData = {
+          content: this.replyContent.trim(),
+          parentCommentId: parentCommentId // 부모 댓글 ID 지정
+        };
+
+        console.log('답글 작성 요청:', commentData);
+
+        const response = await axios.post(`/comments/${articleId}`, commentData, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          baseURL: process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080'
+        });
+
+        console.log('답글 작성 성공:', response.data);
+
+        // 답글 입력창 초기화
+        this.activeReplyId = null;
+        this.replyContent = '';
+
+        // 댓글 목록 새로고침
+        await this.fetchComments();
+
+      } catch (error) {
+        console.error('답글 작성 실패:', error);
+        if (error.response?.status === 401) {
+          localStorage.clear();
+          this.$router.push('/login');
+        } else {
+          alert('답글 작성에 실패했습니다.');
+        }
+      }
+    },
+
     goBack() {
       this.$router.push('/');
     },
@@ -321,25 +652,44 @@ export default {
     toggleBookmark() {
       this.isBookmarked = !this.isBookmarked;
     },
-    toggleCommentLike(commentId) {
-      const comment = this.comments.find(c => c.id === commentId);
-      if (comment) {
-        comment.isLiked = !comment.isLiked;
-        comment.likes += comment.isLiked ? 1 : -1;
-      }
-    },
-    addComment() {
-      if (this.newComment.trim()) {
-        const newCommentObj = {
-          id: this.comments.length + 1,
-          author: '나',
+    async addComment() {
+      if (!this.newComment.trim()) return;
+
+      try {
+        const token = localStorage.getItem('token');
+        const articleId = this.$route.params.articleId;
+
+        const commentData = {
           content: this.newComment.trim(),
-          time: '방금 전',
-          likes: 0,
-          isLiked: false
+          parentCommentId: null // 대댓글이 아닌 경우 null
         };
-        this.comments.push(newCommentObj);
+
+        console.log('댓글 작성 요청:', commentData);
+
+        const response = await axios.post(`/comments/${articleId}`, commentData, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          baseURL: process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080'
+        });
+
+        console.log('댓글 작성 성공:', response.data);
+
+        // 댓글 작성 후 입력창 비우기
         this.newComment = '';
+
+        // 댓글 목록 새로고침
+        await this.fetchComments();
+
+      } catch (error) {
+        console.error('댓글 작성 실패:', error);
+        if (error.response?.status === 401) {
+          localStorage.clear();
+          this.$router.push('/login');
+        } else {
+          alert('댓글 작성에 실패했습니다.');
+        }
       }
     },
     handleEdit() {
