@@ -106,7 +106,7 @@
 
             <!-- 댓글 섹션 -->
             <div class="pa-4">
-              <h3 class="text-h6 font-weight-bold mb-4">댓글 {{ parentComments.length }}개</h3>
+              <h3 class="text-h6 font-weight-bold mb-4">댓글 {{ comments.length }}개</h3>
 
               <!-- 부모 댓글 -->
               <div v-for="comment in parentComments" :key="comment.id" class="mb-4">
@@ -361,10 +361,8 @@ export default {
       }));
 
       console.log('parentComments computed 결과:', filtered);
-      if (filtered.length > 0) {
-        console.log('첫 번째 부모 댓글:', filtered[0]);
-        console.log('memberNickname 값:', filtered[0].memberNickname);
-      }
+      console.log('전체 댓글 수:', this.comments.length);
+      console.log('부모 댓글 수:', filtered.length);
 
       return filtered;
     }

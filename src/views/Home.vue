@@ -173,11 +173,11 @@ export default {
           id: article.id,
           author: article.authorNickname,
           role: '개발자', // 백엔드에서 role 정보가 없으므로 기본값
-          time: this.formatTime(new Date()), // 현재는 기본값, 나중에 createdAt 추가 시 수정
+          time: this.formatTime(article.createdAt ? new Date(article.createdAt) : new Date()),
           title: article.title,
           tags: [], // 백엔드에서 태그 정보가 없으므로 빈 배열
           likes: article.likeCount || 0,
-          comments: 0, // 백엔드에서 댓글 수 정보가 없으므로 기본값
+          comments: article.commentCount || 0, // 백엔드에서 commentCount 필드 사용
           views: article.viewCount || 0,
           avatar: null
         }));
