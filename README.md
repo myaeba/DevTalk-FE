@@ -7,7 +7,7 @@ DevTalk는 개발자들이 기술 스택별로 소통하고, 실시간 채팅을
 ## 주요 기능
 
 ### 1. 기술 스택별 게시판
-![홈 화면](./screenshots/1.png)
+<img src="./screenshots/1.png" alt="홈 화면" width="500">
 
 - 기술 스택(JavaScript, Python, Java, React 등)별 필터링
 - 게시글 검색 기능
@@ -15,7 +15,7 @@ DevTalk는 개발자들이 기술 스택별로 소통하고, 실시간 채팅을
 - 사용자 프로필과 작성 시간 표시
 
 ### 2. 게시글 상세 및 댓글
-![게시글 상세](./screenshots/2.png)
+<img src="./screenshots/2.png" alt="게시글 상세" width="500">
 
 - 게시글 상세 내용 조회
 - 실시간 댓글 시스템
@@ -23,14 +23,14 @@ DevTalk는 개발자들이 기술 스택별로 소통하고, 실시간 채팅을
 - 팔로우 기능으로 개발자 네트워킹
 
 ### 3. 실시간 1:1 채팅
-![채팅 목록](./screenshots/3.png)
+<img src="./screenshots/3.png" alt="채팅 목록" width="500">
 
 - 닉네임/이메일 기반 사용자 검색
 - 채팅 목록 관리
 - 실시간 메시지 알림
 
 ### 4. 채팅방
-![채팅방](./screenshots/4.png)
+<img src="./screenshots/4.png" alt="채팅방" width="500">
 
 - WebSocket 기반 실시간 메시징
 - 메시지 전송 시간 표시
